@@ -1,6 +1,6 @@
 import argparse
 import os
-import util
+import ictft.util as util
 import rasterization as raster
 
 import torch
