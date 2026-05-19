@@ -35,7 +35,7 @@ def compute_arap_loss(source_verts: torch.Tensor,
                       deformed_verts: torch.Tensor,
                       neighbors: list) -> torch.Tensor:
     """
-    Compute ARAP (As-Rigid-As-Possible) loss
+    Compute ARAP (As-Rigid-As-Possible) loss (vectorized)
     Penalizes non-rigid deformations by measuring deviation from local rigidity
 
     Args:
@@ -46,34 +46,63 @@ def compute_arap_loss(source_verts: torch.Tensor,
     Returns:
         arap_loss: Scalar loss value
     """
-    loss = 0.0
-    count = 0
+    device = source_verts.device
+    nverts = len(neighbors)
+
+    # Find max neighbor count for padding
+    max_neighbors = max(len(n) for n in neighbors)
+    if max_neighbors == 0:
+        return torch.tensor(0.0, device=device)
+
+    # Build padded neighbor matrix (V, max_neighbors)
+    neighbor_indices = torch.zeros((nverts, max_neighbors), dtype=torch.long, device=device)
+    neighbor_mask = torch.zeros((nverts, max_neighbors), dtype=torch.bool, device=device)
 
     for i, neighs in enumerate(neighbors):
-        if len(neighs) == 0:
-            continue
+        if len(neighs) > 0:
+            neighbor_indices[i, :len(neighs)] = neighs
+            neighbor_mask[i, :len(neighs)] = True
 
-        # Original and deformed edges from vertex i to its neighbors
-        source_edges = source_verts[neighs] - source_verts[i]  # (N, 3)
-        deformed_edges = deformed_verts[neighs] - deformed_verts[i]  # (N, 3)
+    # Gather neighbor vertices: (V, max_neighbors, 3)
+    source_neighbors = source_verts[neighbor_indices]
+    deformed_neighbors = deformed_verts[neighbor_indices]
 
-        # Compute optimal rotation via Procrustes (SVD)
-        H = source_edges.T @ deformed_edges  # (3, 3)
-        U, S, Vt = torch.linalg.svd(H)
-        R = Vt.T @ U.T
+    # Compute edges from each vertex to its neighbors
+    source_edges = source_neighbors - source_verts.unsqueeze(1)  # (V, max_neighbors, 3)
+    deformed_edges = deformed_neighbors - deformed_verts.unsqueeze(1)  # (V, max_neighbors, 3)
 
-        # Handle reflection case
-        if torch.det(R) < 0:
-            Vt = Vt.clone()
-            Vt[-1, :] *= -1
-            R = Vt.T @ U.T
+    # Mask out invalid neighbors
+    source_edges = source_edges * neighbor_mask.unsqueeze(-1)
+    deformed_edges = deformed_edges * neighbor_mask.unsqueeze(-1)
 
-        # Rotated source edges should match deformed edges
-        rotated_edges = source_edges @ R
+    # Compute covariance matrices: H = source_edges.T @ deformed_edges
+    # (V, 3, max_neighbors) @ (V, max_neighbors, 3) -> (V, 3, 3)
+    H = torch.bmm(source_edges.transpose(1, 2), deformed_edges)
 
-        # Measure deviation from rigidity
-        loss += ((deformed_edges - rotated_edges) ** 2).sum()
-        count += len(neighs)
+    # Batched SVD: (V, 3, 3) each
+    U, S, Vt = torch.linalg.svd(H)
+
+    # Compute rotation R = Vt.T @ U.T -> (V, 3, 3)
+    R = torch.bmm(Vt.transpose(1, 2), U.transpose(1, 2))
+
+    # Handle reflection case: fix determinants < 0
+    det = torch.det(R)  # (V,)
+    reflection_mask = det < 0
+    if reflection_mask.any():
+        Vt = Vt.clone()
+        Vt[reflection_mask, -1, :] *= -1
+        R[reflection_mask] = torch.bmm(
+            Vt[reflection_mask].transpose(1, 2),
+            U[reflection_mask].transpose(1, 2)
+        )
+
+    # Apply rotation to source edges: (V, max_neighbors, 3) @ (V, 3, 3) -> (V, max_neighbors, 3)
+    rotated_edges = torch.bmm(source_edges, R)
+
+    # Compute loss only for valid neighbors
+    squared_diff = ((deformed_edges - rotated_edges) ** 2).sum(dim=-1)  # (V, max_neighbors)
+    loss = (squared_diff * neighbor_mask).sum()
+    count = neighbor_mask.sum()
 
     return loss / (count + 1e-10)
 
