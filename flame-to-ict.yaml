@@ -1,0 +1,15 @@
+flame2023_kwargs:
+  model_path: /media/ankarako/data/dev/phd/3dmms/FLAME2023/assets/flame2023.pkl
+  mesh_path: /media/ankarako/data/dev/phd/3dmms/FLAME2023/assets/head_template_mesh.obj
+  masks_path: /media/ankarako/data/dev/phd/3dmms/FLAME2023/assets/FLAME_masks.pkl
+  lmk_embedding_with_eyes_path: /media/ankarako/data/dev/phd/3dmms/FLAME2023/assets/landmark_embedding_with_eyes.npy
+  nid_params: 300
+  nex_params: 100
+  add_teeth: false
+
+ict_model_kwargs:
+  data_root: /media/ankarako/data/dev/phd/3dmms/ICT-FaceKit/FaceXModel
+  skinning_weights: false
+
+output_dir: .output
+device: [0]
