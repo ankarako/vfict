@@ -35,6 +35,10 @@ def state_init(
     state.output_dir = output_dir
     if not os.path.exists(state.output_dir):
         os.mkdir(state.output_dir)
+
+    state.device = mlf.util.conf.get_device(device)
+    state.flame_model = state.flame_model.to(state.device)
+    state.ict_model = state.ict_model.to(state.device)
     return state
 
 
