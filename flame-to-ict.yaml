@@ -13,3 +13,13 @@ ict_model_kwargs:
 
 output_dir: .output
 device: [0]
+
+nrigid_iters: 5000
+lr: 1.0e-3
+w_data: 1.0
+w_edge: 0.1
+w_laplacian: 0.1
+w_normal: 0.0001
+w_lmks: 100.0
+knn_k: 10
+update_correspondences_every: 1
