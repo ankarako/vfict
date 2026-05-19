@@ -2,6 +2,7 @@
 .conf
 .vscode
 .output
+flame-to-ict.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

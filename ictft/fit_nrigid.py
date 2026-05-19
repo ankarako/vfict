@@ -64,6 +64,7 @@ def compute_arap_loss(source_verts: torch.Tensor,
 
         # Handle reflection case
         if torch.det(R) < 0:
+            Vt = Vt.clone()
             Vt[-1, :] *= -1
             R = Vt.T @ U.T
 
@@ -207,7 +208,7 @@ def non_rigid_icp(
     device = state.device
     deformed = state.flame_model.v_template.clone().requires_grad_(True)
     verts_src = state.flame_model.v_template.clone()
-    neighbors = compute_vertex_neighbors()
+    neighbors = compute_vertex_neighbors(state.flame_model.faces, verts_src.shape[0])
 
     optim = torch.optim.Adam([deformed], lr=state.lr)
 
@@ -240,14 +241,15 @@ def non_rigid_icp(
         loss_edge = mesh_edge_loss(mesh_src)
         loss_lap = mesh_laplacian_smoothing(mesh_src, method='uniform')
         loss_nrm = mesh_normal_consistency(mesh_src)
-        loss_arap = compute_arap_loss(verts_src, deformed, neighbors=)
+        loss_arap = compute_arap_loss(verts_src, deformed, neighbors)
         loss_lmk = torch.tensor(0.0, device=device)
 
         loss = (
-            state.w_data * loss_data + 
-            state.w_edge * loss_edge + 
-            state.w_laplacian * loss_lap + 
-            state.w_normal * loss_nrm
+            state.w_data * loss_data +
+            state.w_edge * loss_edge +
+            state.w_laplacian * loss_lap +
+            state.w_normal * loss_nrm +
+            state.w_arap * loss_arap
         )
 
         if iteration % 10 == 0:
