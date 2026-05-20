@@ -1,23 +1,10 @@
-# ICT-FaceKit UV Space Rasterization
-Just a very small package for rasterizing [ICT-Facekit](https://github.com/ICT-VGL/ICT-FaceKit)'s vertex features onto texture maps (probably could work with other .obj meshes with texture coordinate features).
-
-
-Tested on ![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white) 22.04 and CUDA 11.8, and ![Windows 11](https://img.shields.io/badge/Windows%2011-%230079d5.svg?style=for-the-badge&logo=Windows%2011&logoColor=white) and CUDA 11.7. However, I can't see a reason that it won't run on Windows, or other CUDA versions.
+# Head Alignment
+A small package for 3DMM tracking monocular and multi-view videos with ICTFaceKit.
 
 ## Dependencies
-Just run ```pip install -r requirements.txt``` and you should be ready to go.
+Depends on our own `t3d`, and `tloaders`. Install those separately.
+Additionally install `torch` separately. Then you can `pip install` this package.
 
 **About torch**: I always install pytorch via the provided whls. It should run
 with almost, all pytorch versions.
 
-## Usage
-```
-python rasterize.py --conf /path/to/configuration/file.yaml
-```
-
-Configuration files are .yaml files with the following structure:
-```
-output_dir: path/to/the/output/directory
-ict_dir: path/to/directory/with/ict/space/FaceXModel
-out_res: 1024 # the resolution of each texture map.
-```

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-reference = true
+
+[tool.hatch.build]
+include = ["ha/**/*.py"]
+
+[project]
+name = "HA"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "tyro",
+    "dearpygui",
+    "dlib",
+    "STAR@git+https://github.com/ShenhanQian/STAR/"
+]
